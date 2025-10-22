@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using NZWalks.API.CustomActionFilters;
 using NZWalks.API.Data;
 using NZWalks.API.Models.Domain;
 using NZWalks.API.Models.DTO;
@@ -25,10 +26,13 @@ namespace NZWalks.API.Controllers
 
         //Get all regions
         [HttpGet]
-        public async Task<IActionResult> GetRegions()
+        [ValidateModel]
+        public async Task<IActionResult> GetRegions([FromQuery] string? filterOn, [FromQuery] string? filterQuery,
+            [FromQuery] string? sortBy, [FromQuery] bool? isAscending,
+            [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 1000)
         {
             //get data from database - Domain models
-            var regionsDomain = await regionRepository.GetRegionsAsync();
+            var regionsDomain = await regionRepository.GetRegionsAsync(filterOn, filterQuery, sortBy, isAscending ?? true, pageNumber, pageSize);
 
             //Map domain models to DTOs
             var regionDto = mapper.Map<List<RegionDto>>(regionsDomain);
@@ -40,6 +44,7 @@ namespace NZWalks.API.Controllers
         //Get single region by ID
         [HttpGet]
         [Route("{id}")]
+        [ValidateModel]
         public async Task<IActionResult> GetById([FromRoute] Guid id)
         {
             //Get Region Domain Model from database
@@ -56,47 +61,48 @@ namespace NZWalks.API.Controllers
 
         //Create region
         [HttpPost]
+        [ValidateModel]
         public async Task<IActionResult> CreateRegion([FromBody] AddRegionRequestDto addRegionRequestDto)
         {
-            //Map or convert DTO to domain model
-            var RegionDomainModel = mapper.Map<Region>(addRegionRequestDto);
+                //Map or convert DTO to domain model
+                var RegionDomainModel = mapper.Map<Region>(addRegionRequestDto);
 
-            //use domain model to create region
-            RegionDomainModel = await regionRepository.CreateRegionAsync(RegionDomainModel);
+                //use domain model to create region
+                RegionDomainModel = await regionRepository.CreateRegionAsync(RegionDomainModel);
 
-            //Map Domain model back to DTO
-            var regionDto = mapper.Map<RegionDto>(RegionDomainModel);
+                //Map Domain model back to DTO
+                var regionDto = mapper.Map<RegionDto>(RegionDomainModel);
 
-            return CreatedAtAction(nameof (GetById), new { id =  RegionDomainModel.Id }, RegionDomainModel);
+                return CreatedAtAction(nameof(GetById), new { id = RegionDomainModel.Id }, RegionDomainModel);
         }
 
         //Update region
         [HttpPut]
         [Route("{id:guid}")]
-
+        [ValidateModel]
         public async Task<IActionResult> UpdateRegion([FromRoute] Guid id, [FromBody] UpdateRegionRequestDto updateRegionRequestDto)
         {
-            //Map DTO to domain model
-            var regionDomainModel = mapper.Map<Region>(updateRegionRequestDto);
+                //Map DTO to domain model
+                var regionDomainModel = mapper.Map<Region>(updateRegionRequestDto);
 
-            //checkif region exist
-            regionDomainModel = await regionRepository.UpdateRegionAsync(id, regionDomainModel);
+                //checkif region exist
+                regionDomainModel = await regionRepository.UpdateRegionAsync(id, regionDomainModel);
 
-            if(regionDomainModel == null)
-            {
-                return NotFound();
-            }
+                if (regionDomainModel == null)
+                {
+                    return NotFound();
+                }
 
-            //Convert Domain Model to DTO
-            var regionDto = mapper.Map<RegionDto>(regionDomainModel);
+                //Convert Domain Model to DTO
+                var regionDto = mapper.Map<RegionDto>(regionDomainModel);
 
-            return Ok(regionDto);
+                return Ok(regionDto);
         }
 
         //Delete region
         [HttpDelete]
         [Route("{id:guid}")]
-
+        [ValidateModel]
         public async Task<IActionResult> DeleteRegion([FromRoute] Guid id) 
         {
             var regionDomainModel = await regionRepository.DeleteRegionAsync(id);

@@ -41,9 +41,37 @@ namespace NZWalks.API.Repositories
             return await dBContext.Regions.FirstOrDefaultAsync(x =>  x.Id == Id);
         }
 
-        public async Task<List<Region>> GetRegionsAsync()
+        public async Task<List<Region>> GetRegionsAsync(string? filterOn = null, string? filterQuery = null,
+            string? sortBy = null, bool isAcsending = true, int pageNumber = 1, int pageSize = 1000)
         {
-            return await dBContext.Regions.ToListAsync();
+            //Filtering 
+            var regions = dBContext.Regions.AsQueryable();
+
+            if(string.IsNullOrWhiteSpace(filterOn) == false && string.IsNullOrWhiteSpace(filterQuery) == false)
+            {
+                if(filterOn.Equals("Name", StringComparison.OrdinalIgnoreCase))
+                {
+                    regions = regions.Where(x => x.Name.Contains(filterQuery));
+                }
+            }
+
+            //sorting
+            if(string.IsNullOrWhiteSpace(sortBy) == false)
+            {
+                if(sortBy.Equals("Name", StringComparison.OrdinalIgnoreCase))
+                {
+                    regions = isAcsending ? regions.OrderBy(x => x.Name) : regions.OrderByDescending(x => x.Name);
+                }
+                else if(sortBy.Equals("Code", StringComparison.OrdinalIgnoreCase))
+                {
+                    regions = isAcsending ? regions.OrderBy(x => x.Code) : regions.OrderByDescending(x => x.Code);
+                }
+            }
+
+            //pagination
+            var skipResults = (pageNumber - 1) * pageSize;
+
+            return await regions.Skip(skipResults).Take(pageSize).ToListAsync();
         }
 
         public async Task<Region?> UpdateRegionAsync(Guid id, Region region)
